@@ -94,5 +94,3 @@ README.md       → this file
 ```
 
 ---
-
-The WebSocket-based real-time transfer-order feature of the underlying application is explicitly out of scope for this architecture, as noted above.

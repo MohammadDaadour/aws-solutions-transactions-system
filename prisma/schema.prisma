@@ -1,0 +1,231 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+// --- Enums ---
+enum Role {
+  Admin
+  Mod
+  Member
+}
+
+enum UserType {
+  sender
+  receiver
+}
+
+enum TransactionType {
+  debit
+  credit
+  opening_balance
+}
+
+enum Currency {
+  USD
+  AED
+  EGP
+  VOD
+}
+
+enum SessionStatus {
+  OPEN
+  CLOSING
+  CLOSED
+}
+
+enum BalanceStatus {
+  POSITIVE
+  NEGATIVE
+  ZERO
+}
+
+// --- Transfer Order Enums ---
+// Scoped only to TransferOrder; deliberately separate from the ledger Currency enum.
+enum TransferCurrency {
+  VODAFONE_CASH  // تحويل فودافون كاش
+  BANK_TRANSFER  // تحويل بنكى
+  CASH_EGP       // تحويل جنيه نقدى
+  AED            // درهم اماراتى
+  KWD            // دينار كويتى
+  SWIFT_CHINA    // سويفت الصين
+  SWIFT_KOREA    // سويفت كوريا
+  SWIFT_AUSTRALIA // سويفت استراليا
+}
+
+enum TransferStatus {
+  PENDING    // Awaiting a sender to claim
+  TAKEN      // Claimed by a sender — stays TAKEN even if sender disconnects
+  DONE       // Sender marked as complete
+  CANCELLED  // Manually cancelled by admin
+}
+
+// --- Tables ---
+model User {
+  id                  String         @id @default(uuid()) @db.Uuid
+  username            String         @unique
+  password            String
+  role                Role
+  type                UserType
+  phone               String
+  isActive            Boolean        @default(true) @map("is_active")
+  createdAt           DateTime       @default(now()) @map("created_at")
+
+  // Relations
+  balances            UserBalance[]
+  transactions        Transaction[]  @relation("UserTransactions")
+  createdTransactions Transaction[]  @relation("CreatedByTransactions")
+  auditLogs           AuditLog[]
+  sessionsOpened      Session[]      @relation("SessionOpenedBy")
+  sessionsClosed      Session[]      @relation("SessionClosedBy")
+  sessionBalances     SessionBalance[]
+
+  // Transfer order relations
+  transferOrdersCreated TransferOrder[] @relation("TransferOrderReceiver")
+  transferOrdersTaken   TransferOrder[] @relation("TransferOrderSender")
+
+  // Recycle-bin back-relation
+  deletedTransactions DeletedTransaction[] @relation("DeletedByUser")
+
+  @@map("users")
+}
+
+model UserBalance {
+  id        String   @id @default(uuid()) @db.Uuid
+  sessionId String?   @map("session_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  currency  Currency
+  balance   Decimal  @default(0) @db.Decimal(18, 4) // Essential for financial accuracy
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session   Session?  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  // Composite unique index
+  @@unique([sessionId, userId, currency])
+  @@map("user_balances")
+}
+
+model Transaction {
+  id         String          @id @default(uuid()) @db.Uuid
+  userId     String          @map("user_id") @db.Uuid
+  sessionId  String?          @map("session_id") @db.Uuid
+  type       TransactionType
+  amount     Decimal         @db.Decimal(18, 4)
+  currency   Currency
+  date       DateTime
+  notes      String?
+  createdBy  String          @map("created_by") @db.Uuid
+  createdAt  DateTime        @default(now()) @map("created_at")
+
+  // Relations
+  user       User            @relation("UserTransactions", fields: [userId], references: [id])
+  creator    User            @relation("CreatedByTransactions", fields: [createdBy], references: [id])
+  session    Session?         @relation(fields: [sessionId], references: [id])
+
+  @@map("transactions")
+}
+
+model Session {
+  id           String          @id @default(uuid()) @db.Uuid
+  status       SessionStatus   @default(OPEN)
+  openedAt     DateTime        @default(now()) @map("opened_at")
+  closedAt     DateTime?       @map("closed_at")
+  openedBy     String          @map("opened_by") @db.Uuid
+  closedBy     String?         @map("closed_by") @db.Uuid
+  notes        String?
+
+  // Relations
+  openedByUser User            @relation("SessionOpenedBy", fields: [openedBy], references: [id])
+  closedByUser User?           @relation("SessionClosedBy", fields: [closedBy], references: [id])
+  transactions Transaction[]
+  balances     UserBalance[]
+  snapshots    SessionBalance[]
+
+  @@map("sessions")
+}
+
+model SessionBalance {
+  id            String        @id @default(uuid()) @db.Uuid
+  sessionId     String        @map("session_id") @db.Uuid
+  userId        String        @map("user_id") @db.Uuid
+  currency      Currency
+  balance       Decimal       @db.Decimal(18, 4)
+  balanceStatus BalanceStatus @map("balance_status")
+
+  // Relations
+  session       Session       @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, userId, currency])
+  @@map("session_balances")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  action    String
+  tableName String   @map("table_name")
+  recordId  String   @map("record_id") @db.Uuid
+  oldValue  Json?    @map("old_value")
+  newValue  Json?    @map("new_value")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
+
+model TransferOrder {
+  id         String           @id @default(uuid()) @db.Uuid
+  name       String
+  amount     Decimal          @db.Decimal(18, 4)
+  number     String           // Phone/account number for the transfer
+  currency   TransferCurrency
+  status     TransferStatus   @default(PENDING)
+  version    Int              @default(0) // Optimistic-lock field; incremented on each status change
+
+  // Relations
+  receiverId String           @map("receiver_id") @db.Uuid
+  senderId   String?          @map("sender_id") @db.Uuid
+
+  receiver   User             @relation("TransferOrderReceiver", fields: [receiverId], references: [id])
+  sender     User?            @relation("TransferOrderSender", fields: [senderId], references: [id])
+
+  // Timestamps
+  takenAt    DateTime?        @map("taken_at")
+  doneAt     DateTime?        @map("done_at")
+  createdAt  DateTime         @default(now()) @map("created_at")
+
+  @@map("transfer_orders")
+}
+
+// Recycle bin — stores soft-deleted transactions for up to 15 days before permanent purge.
+// userId, sessionId, and createdBy are plain UUID columns with NO Prisma FK relations because
+// the original Transaction row no longer exists while the row is in the bin.
+// deletedBy DOES have a FK to User because User rows always persist.
+model DeletedTransaction {
+  id        String          @id @db.Uuid
+  userId    String          @map("user_id") @db.Uuid
+  sessionId String?         @map("session_id") @db.Uuid
+  type      TransactionType
+  amount    Decimal         @db.Decimal(18, 4)
+  currency  Currency
+  date      DateTime
+  notes     String?
+  createdBy String          @map("created_by") @db.Uuid
+  createdAt DateTime        @map("created_at")
+
+  deletedAt DateTime        @default(now()) @map("deleted_at")
+  deletedBy String          @map("deleted_by") @db.Uuid
+  purgeAt   DateTime        @map("purge_at")
+
+  deletedByUser User        @relation("DeletedByUser", fields: [deletedBy], references: [id])
+
+  @@map("deleted_transactions")
+}

@@ -1,0 +1,194 @@
+@import "tailwindcss";
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* ============================================================
+   🎨  HAWALA DESIGN TOKENS  —  Single source of truth
+   Change ANY color here and it propagates everywhere.
+   ============================================================ */
+:root {
+  /* ── Core surfaces ── */
+  --hw-bg: #F8FAFC;
+  /* page / main background          (slate-50)   */
+  --hw-surface: #FFFFFF;
+  /* cards, panels, inputs           (white)      */
+  --hw-surface-alt: #F1F5F9;
+  /* table headers, hover states     (slate-100)  */
+
+  /* ── Borders ── */
+  --hw-border: #E2E8F0;
+  /* default border color            (slate-200)  */
+  --hw-border-subtle: #CBD5E1;
+  /* lighter border for inner areas  (slate-300)  */
+
+  /* ── Text ── */
+  --hw-text: #0F172A;
+  /* primary text                    (slate-900)  */
+  --hw-text-secondary: #64748B;
+  /* labels, descriptions            (slate-500)  */
+  --hw-text-muted: #94A3B8;
+  /* placeholders, disabled          (slate-400)  */
+  --hw-text-faint: #CBD5E1;
+  /* very subtle text                (slate-300)  */
+
+  /* ── Accent / Brand (Blue) ── */
+  --hw-accent: #3B82F6;
+  /* primary accent                  (blue-500)   */
+  --hw-accent-hover: #2563EB;
+  /* accent on hover                 (blue-600)   */
+  --hw-accent-muted: #EFF6FF;
+  /* accent bg for badges            (blue-50)    */
+  --hw-accent-ring: rgba(59, 130, 246, 0.3);
+  /* focus ring                      (blue-500/30)*/
+  --hw-accent-solid: #3B82F6;
+  /* solid accent for buttons        (blue-500)   */
+  --hw-accent-solid-hover: #2563EB;
+  /* solid accent hover              (blue-600)   */
+
+  /* ── Success / Positive ── */
+  --hw-success: #10B981;
+  /* success text                    (emerald-500)*/
+  --hw-success-muted: #ECFDF5;
+  /* success bg for badges           (emerald-50) */
+  --hw-success-border: #A7F3D0;
+  /* success border                  (emerald-200)*/
+
+  /* ── Danger / Negative ── */
+  --hw-danger: #EF4444;
+  /* danger text                     (red-500)    */
+  --hw-danger-muted: #FEF2F2;
+  /* danger bg for badges            (red-50)     */
+  --hw-danger-border: #FECACA;
+  /* danger borders                  (red-200)    */
+  --hw-danger-bg: rgba(239, 68, 68, 0.08);
+  /* danger banner bg                             */
+
+  /* ── Info / Neutral accent ── */
+  --hw-info: #0EA5E9;
+  /* info text (sky)                 (sky-500)    */
+  --hw-info-muted: #F0F9FF;
+  /* info bg for badges              (sky-50)     */
+
+  /* ── Warning ── */
+  --hw-warning: #F59E0B;
+  /* warning text                    (amber-500)  */
+  --hw-warning-bg: rgba(245, 158, 11, 0.08);
+  /* reversal row bg                              */
+
+  /* ── Sidebar (dark navy) ── */
+  --hw-sidebar: #0B172A;
+  /* sidebar background                           */
+  --hw-sidebar-hover: #1E3A5F;
+  /* sidebar item hover                           */
+  --hw-sidebar-active: #1D4ED8;
+  /* sidebar active item bg          (blue-700)   */
+  --hw-sidebar-text: #94A3B8;
+  /* sidebar inactive text           (slate-400)  */
+  --hw-sidebar-text-active: #FFFFFF;
+  /* sidebar active text                          */
+  --hw-sidebar-border: rgba(255,255,255,0.08);
+  /* sidebar internal borders                     */
+
+  /* ── Role badge colors (light theme) ── */
+  --hw-role-admin-bg: #F5F3FF;
+  /* violet-50  */
+  --hw-role-admin-text: #7C3AED;
+  /* violet-600 */
+  --hw-role-admin-border: #DDD6FE;
+  /* violet-200 */
+
+  --hw-role-mod-bg: #F0F9FF;
+  /* sky-50     */
+  --hw-role-mod-text: #0284C7;
+  /* sky-600    */
+  --hw-role-mod-border: #BAE6FD;
+  /* sky-200    */
+
+  /* ── Disabled states ── */
+  --hw-disabled-bg: #F1F5F9;
+  /* disabled button bg              (slate-100)  */
+  --hw-disabled-text: #94A3B8;
+  /* disabled button text            (slate-400)  */
+
+  /* ── Legacy (kept for body defaults) ── */
+  --background: var(--hw-bg);
+  --foreground: var(--hw-text);
+}
+
+/* ── Map tokens into Tailwind v4 theme so you can use  ──
+   ── `bg-hw-surface`, `text-hw-accent`, etc. in classes ── */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-hw-bg: var(--hw-bg);
+  --color-hw-surface: var(--hw-surface);
+  --color-hw-surface-alt: var(--hw-surface-alt);
+
+  --color-hw-border: var(--hw-border);
+  --color-hw-border-subtle: var(--hw-border-subtle);
+
+  --color-hw-text: var(--hw-text);
+  --color-hw-text-secondary: var(--hw-text-secondary);
+  --color-hw-text-muted: var(--hw-text-muted);
+  --color-hw-text-faint: var(--hw-text-faint);
+
+  --color-hw-accent: var(--hw-accent);
+  --color-hw-accent-hover: var(--hw-accent-hover);
+  --color-hw-accent-muted: var(--hw-accent-muted);
+  --color-hw-accent-ring: var(--hw-accent-ring);
+  --color-hw-accent-solid: var(--hw-accent-solid);
+  --color-hw-accent-solid-hover: var(--hw-accent-solid-hover);
+
+  --color-hw-success: var(--hw-success);
+  --color-hw-success-muted: var(--hw-success-muted);
+  --color-hw-success-border: var(--hw-success-border);
+
+  --color-hw-danger: var(--hw-danger);
+  --color-hw-danger-muted: var(--hw-danger-muted);
+  --color-hw-danger-border: var(--hw-danger-border);
+  --color-hw-danger-bg: var(--hw-danger-bg);
+
+  --color-hw-info: var(--hw-info);
+  --color-hw-info-muted: var(--hw-info-muted);
+
+  --color-hw-warning: var(--hw-warning);
+  --color-hw-warning-bg: var(--hw-warning-bg);
+
+  --color-hw-sidebar: var(--hw-sidebar);
+  --color-hw-sidebar-hover: var(--hw-sidebar-hover);
+  --color-hw-sidebar-active: var(--hw-sidebar-active);
+  --color-hw-sidebar-text: var(--hw-sidebar-text);
+  --color-hw-sidebar-text-active: var(--hw-sidebar-text-active);
+  --color-hw-sidebar-border: var(--hw-sidebar-border);
+
+  --color-hw-disabled-bg: var(--hw-disabled-bg);
+  --color-hw-disabled-text: var(--hw-disabled-text);
+
+  --font-sans: var(--font-cairo);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Smooth scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--hw-border-subtle); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: var(--hw-text-muted); }
+
+/* Input autofill fix for light mode */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px var(--hw-surface) inset;
+  -webkit-text-fill-color: var(--hw-text);
+  transition: background-color 5000s ease-in-out 0s;
+}
